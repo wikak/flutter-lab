@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,6 +22,37 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    _getCurrencies();
+  }
+
+  Future<void> _getCurrencies() async {
+    var response = await http
+        .get(Uri.parse('https://api.exchangerate-api.com/v4/latest/USD'));
+
+    var data = json.decode(response.body);
+    setState(() {
+      currencies = (data['rates'] as Map<String, dynamic>).keys.toList();
+      rate = data['rates'][toCurrency];
+    });
+  }
+
+  Future<void> _getRate() async {
+    var response = await http.get(
+        Uri.parse('https://api.exchangerate-api.com/v4/latest/$fromCurrency'));
+
+    var data = json.decode(response.body);
+    setState(() {
+      rate = data['rates'][toCurrency];
+    });
+  }
+
+  void _swapCurrencies() {
+    setState(() {
+      String temp = fromCurrency;
+      fromCurrency = toCurrency;
+      toCurrency = temp;
+      _getRate();
+    });
   }
 
   @override
@@ -39,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Padding(
                 padding: EdgeInsets.all(40),
                 child: Image.asset(
-                  'images/currency.png',
+                  'images/currency.png', 
                   width: MediaQuery.of(context).size.width / 2,
                 ),
               ),
@@ -81,6 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           value: fromCurrency,
                           isExpanded: true,
                           style: TextStyle(color: Colors.white),
+                          dropdownColor: Color(0xFF1d2630),
                           items: currencies.map((String value) {
                             return DropdownMenuItem<String>(
                                 value: value, child: Text(value));
@@ -88,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           onChanged: (newValue) {
                             setState(() {
                               fromCurrency = newValue!;
-                              // _getRate();
+                              _getRate();
                             });
                           }),
                     ),
@@ -105,6 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           value: toCurrency,
                           isExpanded: true,
                           style: TextStyle(color: Colors.white),
+                          dropdownColor: Color(0xFF1d2630),
                           items: currencies.map((String value) {
                             return DropdownMenuItem<String>(
                                 value: value, child: Text(value));
@@ -112,12 +148,26 @@ class _HomeScreenState extends State<HomeScreen> {
                           onChanged: (newValue) {
                             setState(() {
                               toCurrency = newValue!;
-                              // _getRate();
+                              _getRate();
                             });
                           }),
                     ),
                   ],
                 ),
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              Text(
+                "Rate $rate",
+                style: TextStyle(fontSize: 20, color: Colors.white),
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              Text(
+                '${total.toStringAsFixed(3)}',
+                style: TextStyle(color: Colors.greenAccent, fontSize: 40),
               )
             ],
           ),
